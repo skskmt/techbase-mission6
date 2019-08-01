@@ -113,7 +113,7 @@ class Register {
             //$rowの中にはテーブルのカラム名が入る
             echo $row['userId'].' ';
             echo $row['displayName'].' ';
-            echo $row['password'].' ';
+            //echo $row['password'].' ';
             echo $row['email'].' ';
             echo "authF:".$row['authflag']." ";
             echo $row['urltoken']."<br>";

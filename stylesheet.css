@@ -1,0 +1,42 @@
+body{ 
+background-color:#dddddd;
+color : #000000;
+margin-right: auto;
+margin-left : auto;
+width:1100px;
+font-size:110%;
+}
+body {
+background-image : url(https://tb-210191.tech-base.net/mission6/p0040_l.jpg);
+background-position: center;
+background-size: cover;
+background-attachment: fixed;
+background-repeat: no-repeat;
+}
+#contents{
+width:700px;
+min-height:300px;
+color : #000000;
+margin-top:1.5%; 
+margin-bottom: 1.5%;
+background-color :#ffffff;
+font-size: 1.6em;
+line-height: 1.5em;
+border-radius: 15px;
+}
+textarea {
+width: 400px;
+height: 10em;
+}
+.box{
+  padding: 0.5em 1em;
+  margin: 2em 0;
+  color: #5d627b;
+  background: white;
+  border-top: solid 5px #5d627b;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+}
+.box p {
+  margin: 0; 
+  padding: 0;
+}
