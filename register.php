@@ -32,13 +32,13 @@
   <form action="" method="post">
     <div>
         <label for = "message"><b>登録用フォーム</b></label><br>
-        user id:<input type = "text" name = "displayname" pattern="^[0-9A-Za-z]+$" title = "半角英数字を入力してください"><br>
+        username:<input type = "text" name = "displayname" pattern="^[0-9A-Za-z]+$" title = "半角英数字を入力してください"><br>
         password:<input type = "text" name = "password" pattern="^([a-zA-Z0-9]{3,})$" title = "3字以上の半角英数字を入力してください"/><br>
         email:<input type = "text" name = "email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$" title = "emailアドレスを入力してください"/>
         <input type = "hidden" name = "edit_flag">
     </div>
     <div class = "button">
-        <button type ="submit" name = "register_submit">登録</button>
+        <button type ="submit" name = "register_submit">仮登録メールを送信</button>
   </form>
 <?php echo "<hr>" ?>
 
@@ -56,15 +56,16 @@
 /*-----------------------------------DATABASE--------------------------------*/
 //echo "<hr>";
 require_once("class.php");
-$register_test = new mysql();
+$register_test = new Register();
 //database上に作成したtableを表示。後で消す。
 //$register_test -> showTable();
 
 
 /*-----------------------------------ボタン押したときの処理--------------------------------*/
 echo "<hr>";
+echo "message:<br>";
 if (isset($_POST["register_submit"])){  //登録ボタンが押されたときの処理。
-    if(($_POST["displayname"])&&($_POST["password"])&&($_POST["email"])){ //useridとパスワードが入力されているとき
+    if(($_POST["displayname"])&&($_POST["password"])&&($_POST["email"])){ //usernameとパスワードが入力されているとき
         $displayname=$_POST["displayname"];
         $password=$_POST["password"];
         $email=$_POST["email"];
@@ -82,7 +83,13 @@ echo "<hr>";
 $register_test -> showRegistered();
 echo "<hr>";
 ?>
-<a href="https://github.com/skskmt/" target="_blank">githubのページはこちら</a>
+<a href="login.php">すでに登録済みの方はこちら</a>
+<br>
+<a href="https://github.com/skskmt/techbase-mission6/" target="_blank">githubのページはこちら</a>
+<?php
+echo "<hr>";
+$register_test -> showRegisteredvardump();
+?>
   </body>
 </html>
 
