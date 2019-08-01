@@ -1,7 +1,7 @@
 <?php
 class Register {
     //serverに接続する
-    private function connectServer(){ 
+    protected function connectServer(){ 
         require("databaseinfo.php"); //databese設定
         $pdo = new PDO($dsn, $user, $password_server, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
         return $pdo;
@@ -10,13 +10,13 @@ class Register {
     //データベース内にテーブルを作成する
     public function __construct(){
         $pdo = $this -> connectServer();
-        $sql = "CREATE TABLE IF NOT EXISTS tbl_user_test5" 
+        $sql = "CREATE TABLE IF NOT EXISTS tbl_user_test6" 
         ." ("
         .  "userId INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,"
         .  "password CHAR(255) NOT NULL DEFAULT '',"
         .  "displayName VARCHAR(64) NOT NULL DEFAULT '' UNIQUE KEY,"
         .  "email VARCHAR(128) NOT NULL DEFAULT '' UNIQUE KEY,"
-        //.  "token CHAR(60) NOT NULL DEFAULT '',"
+        .  "urltoken VARCHAR(256) NOT NULL DEFAULT '',"
         //.  "loginFailureCount TINYINT(1) NOT NULL DEFAULT '0',"
         //.  "loginFailureDatetime DATETIME DEFAULT NULL,"
         .  "authflag TINYINT(1) NOT NULL DEFAULT '0'"
@@ -25,9 +25,9 @@ class Register {
     }
 
     //入力されたusernameが既に存在するか確認
-    private function CheckRegisterDataDesplayName($displayname){
+    protected function CheckRegisterDataDesplayName($displayname){
         $pdo = $this -> connectServer();
-        $sql = 'SELECT * FROM tbl_user_test5 where displayName = :displayName';
+        $sql = 'SELECT * FROM tbl_user_test6 where displayName = :displayName';
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':displayName', $displayname, PDO::PARAM_STR);
         $stmt->execute();
@@ -36,9 +36,9 @@ class Register {
     }
 
     //入力されたemailが既に存在するか確認
-    private function CheckRegisterDataEmail($email){
+    protected function CheckRegisterDataEmail($email){
         $pdo = $this -> connectServer();
-        $sql = 'SELECT * FROM tbl_user_test5 where email = :email';
+        $sql = 'SELECT * FROM tbl_user_test6 where email = :email';
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':email', $email, PDO::PARAM_STR);
         $stmt->execute();
@@ -63,23 +63,31 @@ class Register {
         }
     }
 
+    //トークンの生成
+    protected function GenerateToken(){
+        return hash('sha256',uniqid(rand(),1));
+    }
+
     //username、password、emailの仮登録を行う
-    private function RegisterData($displayname, $password, $email){
+    protected function RegisterData($displayname, $password, $email){
         $pdo = $this -> connectServer();
-        $sql = $pdo -> prepare("INSERT INTO tbl_user_test5 (displayName, password, email) VALUES (:displayName, :password, :email)");  
+        $token = $this -> GenerateToken();
+        $urltoken = "https://tb-210191.tech-base.net/mission6/registration_auth.php"."?urltoken=".$token;
+        $sql = $pdo -> prepare("INSERT INTO tbl_user_test6 (displayName, password, email, urltoken) VALUES (:displayName, :password, :email, :urltoken)");  
         $sql -> bindParam(':displayName', $displayname, PDO::PARAM_STR);
         $sql -> bindParam(':password', $password, PDO::PARAM_STR);
         $sql -> bindParam(':email', $email, PDO::PARAM_STR);
+        $sql -> bindParam(':urltoken', $token, PDO::PARAM_STR);
         $sql -> execute();
         echo $displayname."さん、仮登録を受け付けました。<br>";
-        echo "メール認証を行ってください。(メール認証機能は未実装。)<br>";
-        $this -> RegisterSendMail($email);
+        echo "メール認証を行ってください。<br>";
+        $this -> RegisterSendMail($email,$urltoken);
     }
 
     //仮登録メール送信
-    public function RegisterSendMail($email){
+    public function RegisterSendMail($email,$urltoken){
         require("mailsend.php");
-        mail_send($email);
+        mail_send($email, $urltoken);
     }
 
     
@@ -98,7 +106,7 @@ class Register {
     //登録済みのユーザーデータを表示　後で消す
     public function showRegistered(){
         $pdo = $this -> connectServer();
-        $sql = 'SELECT * FROM tbl_user_test5';
+        $sql = 'SELECT * FROM tbl_user_test6';
         $stmt = $pdo->query($sql);
         $results = $stmt->fetchAll();
         foreach ($results as $row){
@@ -107,14 +115,15 @@ class Register {
             echo $row['displayName'].' ';
             echo $row['password'].' ';
             echo $row['email'].' ';
-            echo "authF:".$row['authflag']."<br>";
+            echo "authF:".$row['authflag']." ";
+            echo $row['urltoken']."<br>";
         }
     }
 
     //登録済みのユーザデータ、vardump 後で消す
     public function showRegisteredvardump(){
         $pdo = $this -> connectServer();
-        $sql = 'SELECT * FROM tbl_user_test5';
+        $sql = 'SELECT * FROM tbl_user_test6';
         $stmt = $pdo->query($sql);
         $results = $stmt->fetchAll();
         foreach ($results as $row){
@@ -127,7 +136,7 @@ class Register {
     public function CheckdeleteRegisteredInfo($delete_number, $delete_password){ 
         $pdo = $this -> connectServer();
         $id = $delete_number;
-        $sql_pre = "SELECT * FROM tbl_user_test5 where userId = :id";
+        $sql_pre = "SELECT * FROM tbl_user_test6 where userId = :id";
         $stmt_pre = $pdo->prepare($sql_pre);
         $stmt_pre->bindParam(':id', $id, PDO::PARAM_INT); //:idに$idを代入する。
         $stmt_pre->execute();
@@ -144,34 +153,58 @@ class Register {
     }
 
     //削除実行メソッド    
-    private function deleteRegisteredInfo($delete_number){
+    protected function deleteRegisteredInfo($delete_number){
         $pdo = $this -> connectServer();
         $id = $delete_number;
-        $sql = 'delete from tbl_user_test5 where userId=:id';
+        $sql = 'delete from tbl_user_test6 where userId=:id';
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
 
-        $sql = 'ALTER TABLE tbl_user_test5 auto_increment = 1';
+        $sql = 'ALTER TABLE tbl_user_test6 auto_increment = 1';
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
         echo "投稿番号".$id."を削除しました。";
     }
+
+    public function checkUrltoken($urltoken){
+        $pdo = $this -> connectServer();
+        $sql_pre = "SELECT * FROM tbl_user_test6 where urltoken = :urltoken AND authflag = '0'"; //authflagが0の中の物から、urltokenが等しいものを検索
+        $stmt_pre = $pdo->prepare($sql_pre);
+        $stmt_pre->bindParam(':urltoken', $urltoken, PDO::PARAM_STR);
+        $stmt_pre->execute();
+        $result = $stmt_pre -> fetchAll();
+        if(!$result){
+            echo "不正なtokenです。登録をやり直してください。";
+        }else{
+            $this -> authFlagConverter($urltoken);
+        }
+    }
+
+    protected function authFlagConverter($urltoken){
+        $pdo = $this -> connectServer();
+        $sql = "update tbl_user_test6 set authflag='1' where urltoken=:urltoken AND authflag = '0'"; //authflagが0の中の物から、urltokenが等しいものをupdate
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':urltoken', $urltoken, PDO::PARAM_STR);
+        $stmt->execute();
+        echo "メール認証が完了しました。";
+    }
 }
 
-class Login{
+class Login extends Register{
+
     //serverに接続する
-    private function connectServer(){ 
-        require("databaseinfo.php"); //databese設定
-        $pdo = new PDO($dsn, $user, $password_server, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
-        return $pdo;
-    }
+    //protected function connectServer(){ 
+    //    require("databaseinfo.php"); //databese設定
+    //    $pdo = new PDO($dsn, $user, $password_server, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
+    //    return $pdo;
+    //}
 
     //入力されたusernameが存在するとき（＋パスワードが一致するとき）、しないときで条件分岐させる
     public function CheckLoginInfo($displayname, $password){ 
         $pdo = $this -> connectServer();
-        $sql_pre = "SELECT * FROM tbl_user_test5 where displayName = :displayname";
+        $sql_pre = "SELECT * FROM tbl_user_test6 where displayName = :displayname";
         $stmt_pre = $pdo->prepare($sql_pre);
         $stmt_pre->bindParam(':displayname', $displayname, PDO::PARAM_STR);
         $stmt_pre->execute();
@@ -189,10 +222,36 @@ class Login{
     }
     
     //ログインメソッド
-    private function LoginInfo($_result){
-        //header( "Location: toppage.php");
-        echo $_result["authflag"];
+    protected function LoginInfo($_result){
+        if ($_result['authflag'] === '0'){
+            echo "メール認証が終わっていません。メールを再送します。";
+            $this -> reSendAuthmail($_result['displayName']);
+        }elseif ($_result['authflag'] === '1'){
+            header("Location: toppage.php");
+        }
 
     }
+
+    //メール再送メソッド(引数usernameに対してトークンをアップデート)
+    protected function reSendAuthmail($username){
+        $newtoken = $this -> GenerateToken();
+        $urltoken = "https://tb-210191.tech-base.net/mission6/registration_auth.php"."?urltoken=".$newtoken; //新しいトークンを生成
+        //データベース上のトークンを更新
+        $pdo = $this -> connectServer();
+        $sql = "update tbl_user_test6 set urltoken=:urltoken where displayName=:username";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':username', $username, PDO::PARAM_STR);
+        $stmt->bindParam(':urltoken', $newtoken, PDO::PARAM_STR);
+        $stmt->execute();
+        //emailの取得
+        $sql_pre = "SELECT * FROM tbl_user_test6 where displayName = :username";
+        $stmt_pre = $pdo->prepare($sql_pre);
+        $stmt_pre->bindParam(':username', $username, PDO::PARAM_STR);
+        $stmt_pre->execute();
+        $result = $stmt_pre -> fetchAll();
+        $email = $result[0]["email"];
+        $this -> RegisterSendMail($email,$urltoken);
+    }
+
 }
 ?>

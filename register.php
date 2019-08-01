@@ -88,7 +88,7 @@ echo "<hr>";
 <a href="https://github.com/skskmt/techbase-mission6/" target="_blank">githubのページはこちら</a>
 <?php
 echo "<hr>";
-$register_test -> showRegisteredvardump();
+//$register_test -> showRegisteredvardump();
 ?>
   </body>
 </html>
