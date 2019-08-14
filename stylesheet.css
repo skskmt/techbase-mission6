@@ -22,7 +22,7 @@ margin-bottom: 1.5%;
 background-color :#ffffff;
 font-size: 1.6em;
 line-height: 1.5em;
-border-radius: 15px;
+/*border-radius: 15px;*/
 }
 textarea {
 width: 400px;
@@ -35,8 +35,33 @@ height: 10em;
   background: white;
   border-top: solid 5px #5d627b;
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+  border-radius: 10px;
 }
 .box p {
+  margin: 0; 
+  padding: 0;
+}
+.box2 {
+  padding: 0.5em 1em;
+  margin: 2em 0;
+  font-weight: bold;
+  color: #6091d3;/*文字色*/
+  background: #FFFFFF;
+  border: solid 3px #6091d3;/*線*/
+  border-radius: 10px;/*角の丸み*/
+}
+.box2 p {
+  margin: 0; 
+  padding: 0;
+}
+.box14{
+  padding: 0.2em 0.5em;
+  margin: 2em 0;
+  background: #d6ebff;
+  box-shadow: 0px 0px 0px 10px #d6ebff;
+  border: dashed 2px white;
+}
+.box14 p {
   margin: 0; 
   padding: 0;
 }

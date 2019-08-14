@@ -30,6 +30,10 @@
   </form>
 </div>
 <?php
+//エスケープ用
+function h($str) {
+  return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
+}
 /*-----------------------------------DATABASE--------------------------------*/
 //echo "<hr>";
 require_once("class.php");
@@ -43,16 +47,16 @@ echo "<hr>";
 echo "message:<br>";
 if (isset($_POST["register_submit"])){  //登録ボタンが押されたときの処理。
     if(($_POST["displayname"])&&($_POST["password"])&&($_POST["email"])){ //usernameとパスワードが入力されているとき
-        $displayname=$_POST["displayname"];
-        $password=$_POST["password"];
-        $email=$_POST["email"];
+        $displayname=h($_POST["displayname"]); //xss
+        $password=h($_POST["password"]); //xss
+        $email=h($_POST["email"]); //xss
         $register_test -> CheckRegisterData($displayname, $password, $email);
     }else{
         echo "userIDとpasswordを入力してください。";
     }
 }elseif (isset($_POST["delete_submit"])){ //削除ボタンが押されたときの処理。
-    $delete_number = $_POST["delete_number"];
-    $delete_password = $_POST["delete_password"];
+    $delete_number = h($_POST["delete_number"]); //xss
+    $delete_password = h($_POST["delete_password"]); //xss
     $register_test -> CheckdeleteRegisteredInfo($delete_number, $delete_password);
 }
 /*-----------------------------------表示--------------------------------*/

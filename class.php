@@ -1,6 +1,7 @@
 <?php
 class Register {
     //serverに接続する
+    
     protected function connectServer(){ 
         require("databaseinfo.php"); //databese設定
         $pdo = new PDO($dsn, $user, $password_server, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
@@ -9,6 +10,7 @@ class Register {
 
     //データベース内にテーブルを作成する
     public function __construct(){
+        //session_start();
         $pdo = $this -> connectServer();
         $sql = "CREATE TABLE IF NOT EXISTS tbl_user_test6" 
         ." ("
@@ -115,8 +117,9 @@ class Register {
             echo $row['displayName'].' ';
             //echo $row['password'].' ';
             echo $row['email'].' ';
-            echo "authF:".$row['authflag']." ";
-            echo $row['urltoken']."<br>";
+            echo "認証:".$row['authflag']." ";
+            //echo $row['urltoken']."<br>";
+            echo "<br>";
         }
     }
 
@@ -135,7 +138,7 @@ class Register {
     //削除すべきものが存在するとき（＋パスワードが一致するとき）、しないときで条件分岐させる
     public function CheckdeleteRegisteredInfo($delete_number, $delete_password){ 
         $pdo = $this -> connectServer();
-        $id = $delete_number;
+        $id = $delete_number; 
         $sql_pre = "SELECT * FROM tbl_user_test6 where userId = :id";
         $stmt_pre = $pdo->prepare($sql_pre);
         $stmt_pre->bindParam(':id', $id, PDO::PARAM_INT); //:idに$idを代入する。
@@ -155,7 +158,7 @@ class Register {
     //削除実行メソッド    
     protected function deleteRegisteredInfo($delete_number){
         $pdo = $this -> connectServer();
-        $id = $delete_number;
+        $id = $delete_number; 
         $sql = 'delete from tbl_user_test6 where userId=:id';
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
@@ -214,23 +217,39 @@ class Login extends Register{
         }else{ //存在するとき
             if($result[0]['password'] === $password){ //パスワードが正しいとき
                 $_result = $result[0]; //当該usernameのデータを格納
-                $this -> LoginInfo($_result); //ログインメソッドへ
+                //$this -> LoginInfo($_result); //ログインメソッドへ
+                if ($_result['authflag'] === '0'){
+                    echo "メール認証が終わっていません。メールを再送します。";
+                    $this -> reSendAuthmail($_result['displayName']);
+                }elseif ($_result['authflag'] === '1'){
+                    //セッション作成
+                    $_SESSION["username"] = $_result["displayName"];
+                    
+                    //toppageに移動
+                    //header("Location: toppage.php");
+                    return true;
+                }
             }else{
                 echo "正しいパスワードを入力してください。";
             }
         }
     }
-    
+    /*
     //ログインメソッド
     protected function LoginInfo($_result){
         if ($_result['authflag'] === '0'){
             echo "メール認証が終わっていません。メールを再送します。";
             $this -> reSendAuthmail($_result['displayName']);
         }elseif ($_result['authflag'] === '1'){
-            header("Location: toppage.php");
+            //セッション作成
+            $_SESSION["username"] = $_result["displayName"];
+            
+            //toppageに移動
+            //header("Location: toppage.php");
+            echo "ok";
         }
 
-    }
+    }*/
 
     //メール再送メソッド(引数usernameに対してトークンをアップデート)
     protected function reSendAuthmail($username){
@@ -252,6 +271,169 @@ class Login extends Register{
         $email = $result[0]["email"];
         $this -> RegisterSendMail($email,$urltoken);
     }
+
+    //セッションIDの設定
+
+    //セッションのハッシュを生成
+
+    //
+    
+}
+class Thread{
+    //serverに接続する
+    protected function connectServer(){ 
+        require("databaseinfo.php"); //databese設定
+        $pdo = new PDO($dsn, $user, $password_server, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
+        return $pdo;
+    }
+
+    //データベース内にテーブルを作成する
+    public function __construct(){
+        //ユーザーデータ用テーブル
+        $pdo = $this -> connectServer();
+        $sql = "CREATE TABLE IF NOT EXISTS tbl_user_test6" 
+        ." ("
+        .  "userId INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+        .  "password CHAR(255) NOT NULL DEFAULT '',"
+        .  "displayName VARCHAR(64) NOT NULL DEFAULT '' UNIQUE KEY,"
+        .  "email VARCHAR(128) NOT NULL DEFAULT '' UNIQUE KEY,"
+        .  "urltoken VARCHAR(256) NOT NULL DEFAULT '',"
+        .  "authflag TINYINT(1) NOT NULL DEFAULT '0'"
+        .  ");"; 
+        $stmt = $pdo->query($sql);
+        $stmt->execute();
+
+        //登校データ用テーブル
+        $sql_s = "CREATE TABLE IF NOT EXISTS tbl_thread_test1" 
+        ." ("
+        .  "threadid INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+        .  "threadpassword CHAR(255) NOT NULL DEFAULT '',"
+        .  "displayName VARCHAR(64) NOT NULL DEFAULT '',"
+        .  "threadtitle TEXT NOT NULL,"
+        .  "contents TEXT,"
+        .  "codecontents TEXT"
+        .  ");"; 
+        $stmt_s = $pdo->query($sql_s);
+        $stmt_s->execute();
+    }
+
+    //テーブルの中身を確認する
+    public function showThreadPosted(){
+        $pdo = $this -> connectServer();
+        $sql = 'SELECT * FROM tbl_thread_test1';
+        $stmt = $pdo->query($sql);
+        $results = $stmt->fetchAll();
+        foreach ($results as $row){
+            //$rowの中にはテーブルのカラム名が入る
+            echo $row['threadid'].' ';
+            echo $row['threadpassword'].' ';
+            echo $row['displayName'].' ';
+            echo $row['threadtitle'].' ';
+            echo $row['contents']." ";
+            echo htmlentities($row['codecontents'], ENT_QUOTES, 'UTF-8')."<br>";
+            echo "<br>";
+        }
+    }
+
+    //テーブルのリンクを張る
+    public function getThreadLink(){
+        $pdo = $this -> connectServer();
+        $sql = 'SELECT * FROM tbl_thread_test1';
+        $stmt = $pdo->query($sql);
+        $results = $stmt->fetchAll();
+        return $results;
+    }
+    
+    //新しいスレッドを作る
+    public function makeNewThread($threadpassword,$displayname,$threadtitle,$contents,$codecontents){
+        $pdo = $this -> connectServer();
+        $sql = $pdo -> prepare("INSERT INTO tbl_thread_test1 (threadpassword, displayName, threadtitle, contents, codecontents) VALUES (:threadpassword, :displayName, :threadtitle, :contents, :codecontents)");  
+        $sql -> bindParam(':threadpassword', $threadpassword, PDO::PARAM_STR);
+        $sql -> bindParam(':displayName', $displayname, PDO::PARAM_STR);
+        $sql -> bindParam(':threadtitle', $threadtitle, PDO::PARAM_STR);
+        $sql -> bindParam(':contents', $contents, PDO::PARAM_STR);
+        $sql -> bindParam(':codecontents', $codecontents, PDO::PARAM_STR);
+        $sql -> execute();
+        //echo $displayname."さん、新規スレッド作成を受け付けました。<br>";
+
+    }
+
+    //引数に来たスレッドを表示する（とりあえず配列として返すぞ）
+    public function getOneThread($threadid){
+        $pdo = $this -> connectServer();
+        $sql_pre = "SELECT * FROM tbl_thread_test1 where threadid = :threadid";
+        $stmt_pre = $pdo->prepare($sql_pre);
+        $stmt_pre->bindParam(':threadid', $threadid, PDO::PARAM_INT);
+        $stmt_pre->execute();
+        $result = $stmt_pre -> fetchAll();
+        return $result;
+    }
+
+    //削除すべきものが存在するとき（＋パスワードが一致するとき）、しないときで条件分岐させる
+    public function CheckdeleteThread($delete_number, $delete_password){ 
+        $pdo = $this -> connectServer();
+        $id = $delete_number; 
+        $sql_pre = "SELECT * FROM tbl_thread_test1 where threadid = :id";
+        $stmt_pre = $pdo->prepare($sql_pre);
+        $stmt_pre->bindParam(':id', $id, PDO::PARAM_INT); //:idに$idを代入する。
+        $stmt_pre->execute();
+        $result = $stmt_pre -> fetchAll();
+        if(!$result){ //削除すべきものが存在しないとき
+            //echo "<hr>削除対象番号が入力されていないか、その投稿番号は存在しません。";
+            return "aaa";
+        }else{ //削除すべきものが存在するとき
+            if($result[0]['threadpassword'] === $delete_password){ //パスワードが正しいとき
+                $this -> deleteThread($delete_number); //削除メソッドへ
+                return "ccc";
+            }else{
+                return "bbb";
+                //echo "<hr>正しいパスワードを入力してください。";
+            }
+        }
+    }
+
+    //削除すべきものが存在するときinbrowze
+    public function CheckdeleteThreadInbrowze($delete_number, $delete_password){ 
+        $pdo = $this -> connectServer();
+        $id = $delete_number; 
+        $sql_pre = "SELECT * FROM tbl_thread_test1 where threadid = :id";
+        $stmt_pre = $pdo->prepare($sql_pre);
+        $stmt_pre->bindParam(':id', $id, PDO::PARAM_INT); //:idに$idを代入する。
+        $stmt_pre->execute();
+        $result = $stmt_pre -> fetchAll();
+        if(!$result){ //削除すべきものが存在しないとき
+            //echo "<hr>削除対象番号が入力されていないか、その投稿番号は存在しません。";
+            return "aaa";
+        }else{ //削除すべきものが存在するとき
+            if($result[0]['threadpassword'] === $delete_password){ //パスワードが正しいとき
+                $this -> deleteThread($delete_number); //削除メソッドへ
+                return "ccc";
+            }else{
+                return "bbb";
+                //echo "<hr>正しいパスワードを入力してください。";
+            }
+        }
+    }
+
+    //削除実行メソッド    
+    protected function deleteThread($delete_number){
+        $pdo = $this -> connectServer();
+        $id = $delete_number; 
+        $sql = 'delete from tbl_thread_test1 where threadid=:id';
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $sql = 'ALTER TABLE tbl_thread_test1 auto_increment = 1';
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        //echo "<hr>スレッド".$id."を削除しました。";
+        //$deleted_alert = "<script type='text/javascript'>alert('スレッド'.$id.'を削除しました')</script>";
+        //echo $deleted_alert;
+    }
+
+    
 
 }
 ?>
